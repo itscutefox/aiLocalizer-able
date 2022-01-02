@@ -4,7 +4,7 @@ setlocal
 set target=ko
 set scriptName=aiLocalizer-able
 set author=@itscutefox
-set scriptVer=210810-001
+set scriptVer=220102-001
 set fileName=run.cmd
 
 title %scriptName% %scriptVer%
@@ -29,17 +29,36 @@ exit
 echo.
 echo. %scriptName% by %author%
 echo. Version: %scriptVer%
-echo.
+set dp=%~dp0
 
+
+if exist "%dp%config\translatedLocation.txt" (
+    set dirPreset=true
+    goto loadPreset
+) else (
+    goto configFolder
+)
+
+:configFolder
+if exist "%dp%config" (
+	goto landing
+) else (
+	mkdir "%dp%config"
+	goto landing
+)
+
+:landing
+set dirPreset=false
 echo.
 echo. -
 echo.
-echo. Where is "ingbrzy/Xiaomi.eu-MIUIv12-XML-Compare"?
+echo. Where is "ingbrzy/Xiaomi.eu-MIUIv13-XML-Compare"?
 echo.
 echo. No Quotation Mark for Location.
-echo. Example: C:\Users\User\Documents\Xiaomi.eu-MIUIv12-XML-Compare
+echo. Example: C:\Users\User\Documents\Xiaomi.eu-MIUIv13-XML-Compare
 echo.
 set /p stringSource=Location: 
+echo %stringSource% > "%dp%config\sourceLocation.txt"
 
 echo.
 echo. -
@@ -49,19 +68,61 @@ echo.
 echo. Recommended: star
 echo.
 set /p deviceCodename=Codename of device: 
+echo %deviceCodename% > "%dp%config\deviceCodename.txt"
 set directorySource=\%deviceCodename%
 
 echo.
 echo. -
 echo.
-echo. Where is "cjhyuky/MA-XML-MIUI12-KOREAN"?
+echo. Where is "cjhyuky/MA-XML-MIUI13-KOREAN"?
 echo.
 echo. No Quotation Mark for Location.
-echo. Example: C:\Users\User\Documents\MA-XML-MIUI12-KOREAN
+echo. Example: C:\Users\User\Documents\MA-XML-MIUI13-KOREAN
 echo.
 set /p stringTranslated=Location: 
-
+echo %stringTranslated% > "%dp%config\translatedLocation.txt"
 set directoryTranslated=\Korean\main
+goto locationConfirm
+
+:loadPreset
+echo.
+echo. -
+echo.
+echo. Loading preset...
+echo.
+for /f "tokens=1 usebackq" %%f in ("%dp%config\sourceLocation.txt") do set stringSource=%%f
+for /f "tokens=1 usebackq" %%f in ("%dp%config\deviceCodename.txt") do set deviceCodename=%%f
+set directorySource=\%deviceCodename%
+for /f "tokens=1 usebackq" %%f in ("%dp%config\translatedLocation.txt") do set stringTranslated=%%f
+set directoryTranslated=\Korean\main
+goto locationConfirm
+
+:locationConfirm
+cls
+echo.
+echo. Source:
+echo. "%stringSource%%directorySource%"
+echo.
+echo. Translated:
+echo. "%stringTranslated%%directoryTranslated%"
+echo.
+if "%dirPreset%"=="true" (
+    echo. The locations are loaded from config folder!
+) else (
+    echo. The locations are saved in config folder!
+)
+echo.
+echo. To proceed, type y
+echo. If you want to reset config, type n
+echo.
+set /p useConfig=type y or n: 
+if "%useConfig%"=="n" (
+	cls
+	goto landing
+) else (
+	goto createSymLink
+)
+echo.
 
 :createSymLink
 cls
@@ -71,8 +132,6 @@ echo. "%stringSource%%directorySource%"
 echo.
 echo. Translated:
 echo. "%stringTranslated%%directoryTranslated%"
-echo.
-
 echo.
 echo. -
 echo.
@@ -108,13 +167,14 @@ echo. -
 echo.
 echo. Creating symbolic links...
 echo.
-set dp=%~dp0
 mkdir "%dp%lazy\%packageTranslated%.apk\res"
 mklink /d "%dp%lazy\%packageTranslated%.apk\res\values" "%stringSource%%directorySource%\%packageSource%.apk\res\values"
-mklink /d "%dp%\lazy\%packageTranslated%.apk\res\values-%target%" "%stringTranslated%%directoryTranslated%\%packageTranslated%.apk\res\values-%target%"
+mklink /d "%dp%lazy\%packageTranslated%.apk\res\values-%target%" "%stringTranslated%%directoryTranslated%\%packageTranslated%.apk\res\values-%target%"
 
 echo.
 echo. DONE
+echo. Symbolic links are created in lazy folder!
 echo.
+echo. To create more symlinks, press any key
 pause
 goto createSymLink
